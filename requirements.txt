@@ -3,3 +3,7 @@ pandas
 tqdm
 spacy
 gensim
+torch
+torchvision
+torchaudio
+scikit-learn
