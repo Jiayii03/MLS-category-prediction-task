@@ -1,0 +1,39 @@
+                            precision    recall  f1-score   support
+
+                       ATM       0.98      0.99      0.99      1680
+    Arts and Entertainment       0.87      0.79      0.83       123
+                  Bank Fee       0.46      0.60      0.52        10
+                 Bank Fees       0.96      0.98      0.97      1972
+             Check Deposit       0.96      0.69      0.80        67
+  Clothing and Accessories       0.69      0.46      0.55       942
+        Convenience Stores       0.51      0.94      0.66      5634
+         Department Stores       0.79      0.27      0.41       623
+     Digital Entertainment       0.85      0.88      0.87      1382
+Food and Beverage Services       0.16      0.04      0.07        92
+              Gas Stations       0.70      0.34      0.46      3920
+  Gyms and Fitness Centers       0.00      0.00      0.00        22
+                Healthcare       0.00      0.00      0.00        67
+                 Insurance       0.85      0.66      0.74       527
+                  Interest       0.99      1.00      0.99        82
+ Internal Account Transfer       0.99      0.98      0.99      3517
+                     Loans       0.96      0.89      0.93      5910
+                   Payment       1.00      0.23      0.38        13
+                   Payroll       0.93      0.90      0.91      2496
+               Restaurants       0.87      0.73      0.79      7930
+                   Service       0.92      0.29      0.44       287
+                     Shops       0.85      0.75      0.80      2213
+Supermarkets and Groceries       0.82      0.82      0.82      4924
+                Tax Refund       0.00      0.00      0.00         3
+Telecommunication Services       0.86      0.64      0.74        50
+               Third Party       0.95      0.95      0.95      8578
+                  Transfer       0.87      0.88      0.88      1916
+           Transfer Credit       0.92      0.99      0.95      6481
+            Transfer Debit       0.94      0.93      0.93      4511
+          Transfer Deposit       0.91      0.96      0.94      1458
+                    Travel       0.61      0.41      0.49       110
+             Uncategorized       0.72      0.73      0.72      8724
+                 Utilities       0.80      0.79      0.79      1272
+
+                  accuracy                           0.83     77536
+                 macro avg       0.75      0.65      0.68     77536
+              weighted avg       0.85      0.83      0.83     77536
