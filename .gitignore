@@ -1,4 +1,4 @@
 /dataset
 /bin
-/models
-/dataset
+/models/fasttext
+/dataset/preprocessed_bank_transaction.csv
