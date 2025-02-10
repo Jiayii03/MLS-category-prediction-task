@@ -1,47 +1,50 @@
 # **MLS Take-Home Assessment - Transaction Category Classification**
 ## **Author:** Chau Jia Yi
-## **Date:** 11/02/2025
+ **Date:** 11/02/2025
+
+ **Time Spent:** 15h development + 2h documentation
 
 This project focuses on classifying **bank transaction descriptions** into predefined **categories** using an **Artificial Neural Network (ANN)** with **FastText embeddings**. The pipeline includes **data preprocessing, model training, evaluation, and inference**.  
 
 ---
 
 ## 📂 **Project Structure**
-### **1️⃣ `dataset/`**
+
+### **1️⃣ `requirements.txt`**
+- Lists all **required Python packages** needed to run the project. Make sure your machine has all these packages installed first.
+
+### **2️⃣ `dataset/`**
 - **Contains raw and preprocessed transaction datasets** used for training and inference.
   - `bank_transaction.csv`: Provided dataset
   - `user_profile.csv`: Provided dataset
   - `preprocessed_bank_transaction.csv`: Merged, preprocessed dataset with numerical embeddings
   - `inference.csv`: Unseen instances used for model inference.
 
-### **2️⃣ `models/`**
+### **3️⃣ `models/`**
 - **Saved trained models** for:
   - `ann/`: Trained **ANN models** for classification.
   - `fasttext/`: Custom-trained **FastText model** for generating transaction description embeddings.
   - `scaler/`: **StandardScaler** fitted on training set.
 
-### **3️⃣ `source/`**
+### **4️⃣ `source/`**
 - **Contains all Jupyter notebooks** used for different stages of development:
   - `data_preprocessing.ipynb` → Cleans and preprocesses transaction data.
   - `model_training.ipynb` → Trains the ANN model using structured data and FastText embeddings.
   - `model_inference.ipynb` → Runs inference on unseen transactions.
   - `preprocess_train_pipeline.ipynb` → End-to-end pipeline combining preprocessing, training, and inference.
 
-### **4️⃣ `html_report/`**
+### **5️⃣ `ipynb_html/`**
 
 - Contains all four Jupyter notebooks in HTML format.
 
-### **5️⃣ `results/`**
+### **6️⃣ `results/`**
 - Stores **evaluation results** from model training and testing, including:
   1.  **Loss and accuracy plots** (train vs. test).
   2.  **Confusion matrix visualizations**.
   3.  **Classification report (precision, recall, and F1-score).**
 
-### **6️⃣ `util/`**
+### **7️⃣ `util/`**
 - Contains utility functions for reusability.
-
-### **7️⃣ `requirements.txt`**
-- Lists all **required Python packages** needed to run the project.
 
 ---
 

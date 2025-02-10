@@ -3,7 +3,7 @@
 <html lang="en">
 <head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>model_training</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>preprocess_train_inference</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <style type="text/css">
     pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -7517,7 +7517,11 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="Model-Training">Model Training<a class="anchor-link" href="#Model-Training">¶</a></h2>
+<h1 id="Predicting-Categories-of-Bank-Transaction-Data">Predicting Categories of Bank Transaction Data<a class="anchor-link" href="#Predicting-Categories-of-Bank-Transaction-Data">¶</a></h1><p>This notebook combines all three other notebooks (<code>data_preprocessing.ipynb</code>, <code>model_training.ipynb</code> and <code>model_inference.ipynb</code>) as a single pipeline that runs from end to end.</p>
+<ul>
+<li>Author: Chau Jia Yi</li>
+<li>Date: 11/2/2025</li>
+</ul>
 </div>
 </div>
 </div>
@@ -7528,7 +7532,2108 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Having preprocessed the dataset, this notebook builds and trains an ANN, hopefully be able to classify transaction category and achieve decent result.</p>
+<h2 id="Data-Preprocessing">Data Preprocessing<a class="anchor-link" href="#Data-Preprocessing">¶</a></h2><p>This section preprocesses two raw datasets (<code>bank_transaction.csv</code> and <code>user_profile.csv</code>) to serve as training inputs to the model later.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Data-Cleaning-and-Merging">Data Cleaning and Merging<a class="anchor-link" href="#Data-Cleaning-and-Merging">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Loading-Data-&amp;-Inspect-for-Missing-Values">Loading Data &amp; Inspect for Missing Values<a class="anchor-link" href="#Loading-Data-&amp;-Inspect-for-Missing-Values">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [76]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">gensim</span>
+<span class="kn">from</span> <span class="nn">gensim.models</span> <span class="kn">import</span> <span class="n">FastText</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">42</span>
+
+<span class="c1"># Set all random seeds</span>
+<span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+<span class="n">gensim</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="c1"># Load datasets</span>
+<span class="n">bank_transaction</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../dataset/bank_transaction.csv"</span><span class="p">)</span>
+<span class="n">user_profile</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../dataset/user_profile.csv"</span><span class="p">)</span>
+
+<span class="c1"># Display first few rows</span>
+<span class="n">display</span><span class="p">(</span><span class="n">bank_transaction</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+<span class="n">display</span><span class="p">(</span><span class="n">user_profile</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>client_id</th>
+<th>bank_id</th>
+<th>account_id</th>
+<th>txn_id</th>
+<th>txn_date</th>
+<th>description</th>
+<th>amount</th>
+<th>category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>2023-09-29 00:00:00</td>
+<td>Earnin           PAYMENT                 Donatas Danyal</td>
+<td>20.0</td>
+<td>Loans</td>
+</tr>
+<tr>
+<th>1</th>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>3</td>
+<td>2023-08-14 00:00:00</td>
+<td>ONLINE TRANSFER FROM NDonatas DanyalDA O CARSON BUSINESS CHECKING 1216 1216</td>
+<td>25.0</td>
+<td>Transfer Credit</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>5</td>
+<td>2023-09-25 00:00:00</td>
+<td>MONEY TRANSFER                          AUTHORIZED ON   09/25 FROM Earnin CDAEJ_B                     CA  S583269001208168   111</td>
+<td>20.0</td>
+<td>Loans</td>
+</tr>
+<tr>
+<th>3</th>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>1</td>
+<td>2023-06-02 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>16.0</td>
+<td>Transfer Credit</td>
+</tr>
+<tr>
+<th>4</th>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>2</td>
+<td>2023-06-01 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>4.0</td>
+<td>Transfer Credit</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>CLIENT_ID</th>
+<th>IS_INTERESTED_INVESTMENT</th>
+<th>IS_INTERESTED_BUILD_CREDIT</th>
+<th>IS_INTERESTED_INCREASE_INCOME</th>
+<th>IS_INTERESTED_PAY_OFF_DEBT</th>
+<th>IS_INTERESTED_MANAGE_SPENDING</th>
+<th>IS_INTERESTED_GROW_SAVINGS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>2</th>
+<td>3</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>3</th>
+<td>4</td>
+<td>False</td>
+<td>True</td>
+<td>True</td>
+<td>True</td>
+<td>True</td>
+<td>True</td>
+</tr>
+<tr>
+<th>4</th>
+<td>5</td>
+<td>True</td>
+<td>False</td>
+<td>True</td>
+<td>True</td>
+<td>True</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [77]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">"Missing values in bank_transaction dataset:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">bank_transaction</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Missing values in user_profile dataset:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">user_profile</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>Missing values in bank_transaction dataset:
+client_id        0
+bank_id          0
+account_id       0
+txn_id           0
+txn_date         0
+description      0
+amount           0
+category       257
+dtype: int64
+
+Missing values in user_profile dataset:
+CLIENT_ID                        0
+IS_INTERESTED_INVESTMENT         0
+IS_INTERESTED_BUILD_CREDIT       0
+IS_INTERESTED_INCREASE_INCOME    0
+IS_INTERESTED_PAY_OFF_DEBT       0
+IS_INTERESTED_MANAGE_SPENDING    0
+IS_INTERESTED_GROW_SAVINGS       0
+dtype: int64
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [78]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># print total number of rows in both bank_transaction and user_profile dataset</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Total number of rows in bank_transaction dataset: "</span><span class="p">,</span> <span class="n">bank_transaction</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Total number of rows in user_profile dataset: "</span><span class="p">,</span> <span class="n">user_profile</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+Total number of rows in bank_transaction dataset:  258779
+Total number of rows in user_profile dataset:  1000
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Merging-bank_transaction.csv-with-user_profile.csv">Merging <code>bank_transaction.csv</code> with <code>user_profile.csv</code><a class="anchor-link" href="#Merging-bank_transaction.csv-with-user_profile.csv">¶</a></h4><p>Incorporating <code>user_profile.csv</code> dataset is useful as</p>
+<ul>
+<li>Financial behaviour may vary by user interests. E.g. Users interested in "Grow Savings" may have more deposit transactions. Including this data adds personalized financial behavior insights to the model.</li>
+<li>The model may find user-specific spending patterns.</li>
+</ul>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [79]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Convert all column names to lowercase</span>
+<span class="n">bank_transaction</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">bank_transaction</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+<span class="n">user_profile</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">user_profile</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+<span class="c1"># merge both datasets on client_id</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">bank_transaction</span><span class="p">,</span> <span class="n">user_profile</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">'client_id'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'inner'</span><span class="p">)</span>
+
+<span class="c1"># Display first few rows of merged dataset</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>client_id</th>
+<th>bank_id</th>
+<th>account_id</th>
+<th>txn_id</th>
+<th>txn_date</th>
+<th>description</th>
+<th>amount</th>
+<th>category</th>
+<th>is_interested_investment</th>
+<th>is_interested_build_credit</th>
+<th>is_interested_increase_income</th>
+<th>is_interested_pay_off_debt</th>
+<th>is_interested_manage_spending</th>
+<th>is_interested_grow_savings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>4</td>
+<td>2023-09-29 00:00:00</td>
+<td>Earnin           PAYMENT                 Donatas Danyal</td>
+<td>20.0</td>
+<td>Loans</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>1</th>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>3</td>
+<td>2023-08-14 00:00:00</td>
+<td>ONLINE TRANSFER FROM NDonatas DanyalDA O CARSON BUSINESS CHECKING 1216 1216</td>
+<td>25.0</td>
+<td>Transfer Credit</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>5</td>
+<td>2023-09-25 00:00:00</td>
+<td>MONEY TRANSFER                          AUTHORIZED ON   09/25 FROM Earnin CDAEJ_B                     CA  S583269001208168   111</td>
+<td>20.0</td>
+<td>Loans</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>3</th>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>1</td>
+<td>2023-06-02 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>16.0</td>
+<td>Transfer Credit</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>4</th>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>2</td>
+<td>2023-06-01 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>4.0</td>
+<td>Transfer Credit</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Dropping-rows-with-missing-labels">Dropping rows with missing labels<a class="anchor-link" href="#Dropping-rows-with-missing-labels">¶</a></h4><p>Only 257 rows out of 258,779 (~0.1%) have missing category labels, this suggests those missing values are likely random and not part of a structured evaluation set. Keeping them could introduce noise.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [80]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">'category'</span><span class="p">])</span>
+
+<span class="c1"># Verify the dataset after removal</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Remaining rows after removing missing categories: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>Remaining rows after removing missing categories: 258522
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Removing-unnecessary-features">Removing unnecessary features<a class="anchor-link" href="#Removing-unnecessary-features">¶</a></h4><p>Some features may not be relevant for predicting transaction categories. Features like <code>client_id</code>, <code>bank_id</code> and <code>account_id</code>, and <code>txn_id</code> are raw identifiers that might not generalize well to new, unseen users/banks/accounts/transactions.</p>
+<p>Dropping those columns ensures that the model focuses on real transaction-specific features like <code>description</code>, <code>amount</code>, and <code>txn_date</code>, which are more universally useful.</p>
+<p><em>However, they may still provide valuable transaction behavior insights to the model when encoded properly via feature engineering (mean, min, max, sum)</em>.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [81]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Dropping client_id, bank_id, account_id, and txn_id columns</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'client_id'</span><span class="p">,</span> <span class="s1">'bank_id'</span><span class="p">,</span> <span class="s1">'account_id'</span><span class="p">,</span> <span class="s1">'txn_id'</span><span class="p">])</span>
+
+<span class="c1"># Move the target column to the last</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="s1">'category'</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">'category'</span><span class="p">]]</span>
+
+<span class="c1"># Display first few rows of the dataset</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>txn_date</th>
+<th>description</th>
+<th>amount</th>
+<th>is_interested_investment</th>
+<th>is_interested_build_credit</th>
+<th>is_interested_increase_income</th>
+<th>is_interested_pay_off_debt</th>
+<th>is_interested_manage_spending</th>
+<th>is_interested_grow_savings</th>
+<th>category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>2023-09-29 00:00:00</td>
+<td>Earnin           PAYMENT                 Donatas Danyal</td>
+<td>20.0</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>Loans</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2023-08-14 00:00:00</td>
+<td>ONLINE TRANSFER FROM NDonatas DanyalDA O CARSON BUSINESS CHECKING 1216 1216</td>
+<td>25.0</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>Transfer Credit</td>
+</tr>
+<tr>
+<th>2</th>
+<td>2023-09-25 00:00:00</td>
+<td>MONEY TRANSFER                          AUTHORIZED ON   09/25 FROM Earnin CDAEJ_B                     CA  S583269001208168   111</td>
+<td>20.0</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>Loans</td>
+</tr>
+<tr>
+<th>3</th>
+<td>2023-06-02 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>16.0</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>Transfer Credit</td>
+</tr>
+<tr>
+<th>4</th>
+<td>2023-06-01 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>4.0</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>Transfer Credit</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Data-Encoding-and-Normalisation">Data Encoding and Normalisation<a class="anchor-link" href="#Data-Encoding-and-Normalisation">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="One-Hot-Encoding-for-Categorical-Data">One-Hot Encoding for Categorical Data<a class="anchor-link" href="#One-Hot-Encoding-for-Categorical-Data">¶</a></h4><ol>
+<li>User interest columns from <code>user_profile.csv</code> (IS_INTERESTED_* columns are already boolean).</li>
+<li>Transaction category (category) from <code>bank_transaction.csv</code>.</li>
+</ol>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [82]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># One-hot encode user interest columns (Boolean → Binary 0/1)</span>
+<span class="n">user_interest_cols</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">'is_interested_investment'</span><span class="p">,</span> <span class="s1">'is_interested_build_credit'</span><span class="p">,</span>
+    <span class="s1">'is_interested_increase_income'</span><span class="p">,</span> <span class="s1">'is_interested_pay_off_debt'</span><span class="p">,</span>
+    <span class="s1">'is_interested_manage_spending'</span><span class="p">,</span> <span class="s1">'is_interested_grow_savings'</span>
+<span class="p">]</span>
+<span class="n">df</span><span class="p">[</span><span class="n">user_interest_cols</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">user_interest_cols</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="c1"># One-hot encode the target variable (category)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'category'</span><span class="p">],</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">'category'</span><span class="p">)</span>
+
+<span class="n">category_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"category_"</span><span class="p">)]</span>
+<span class="n">df</span><span class="p">[</span><span class="n">category_cols</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">category_cols</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="c1"># Display updated dataset</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>txn_date</th>
+<th>description</th>
+<th>amount</th>
+<th>is_interested_investment</th>
+<th>is_interested_build_credit</th>
+<th>is_interested_increase_income</th>
+<th>is_interested_pay_off_debt</th>
+<th>is_interested_manage_spending</th>
+<th>is_interested_grow_savings</th>
+<th>category_ATM</th>
+<th>category_Arts and Entertainment</th>
+<th>category_Bank Fee</th>
+<th>category_Bank Fees</th>
+<th>category_Check Deposit</th>
+<th>category_Clothing and Accessories</th>
+<th>category_Convenience Stores</th>
+<th>category_Department Stores</th>
+<th>category_Digital Entertainment</th>
+<th>category_Food and Beverage Services</th>
+<th>category_Gas Stations</th>
+<th>category_Gyms and Fitness Centers</th>
+<th>category_Healthcare</th>
+<th>category_Insurance</th>
+<th>category_Interest</th>
+<th>category_Internal Account Transfer</th>
+<th>category_Loans</th>
+<th>category_Payment</th>
+<th>category_Payroll</th>
+<th>category_Restaurants</th>
+<th>category_Service</th>
+<th>category_Shops</th>
+<th>category_Supermarkets and Groceries</th>
+<th>category_Tax Refund</th>
+<th>category_Telecommunication Services</th>
+<th>category_Third Party</th>
+<th>category_Transfer</th>
+<th>category_Transfer Credit</th>
+<th>category_Transfer Debit</th>
+<th>category_Transfer Deposit</th>
+<th>category_Travel</th>
+<th>category_Uncategorized</th>
+<th>category_Utilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>2023-09-29 00:00:00</td>
+<td>Earnin           PAYMENT                 Donatas Danyal</td>
+<td>20.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2023-08-14 00:00:00</td>
+<td>ONLINE TRANSFER FROM NDonatas DanyalDA O CARSON BUSINESS CHECKING 1216 1216</td>
+<td>25.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>2</th>
+<td>2023-09-25 00:00:00</td>
+<td>MONEY TRANSFER                          AUTHORIZED ON   09/25 FROM Earnin CDAEJ_B                     CA  S583269001208168   111</td>
+<td>20.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>3</th>
+<td>2023-06-02 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>16.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>4</th>
+<td>2023-06-01 00:00:00</td>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>4.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Encoding-txn_date">Encoding <code>txn_date</code><a class="anchor-link" href="#Encoding-txn_date">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [83]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Convert txn_date to datetime format (if not already in datetime)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">'coerce'</span><span class="p">)</span>
+
+<span class="c1"># Extract time-based features</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'day_of_week'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span>  <span class="c1"># Monday=0, Sunday=6</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'day_of_month'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span>  <span class="c1"># 1-31</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'hour'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>  <span class="c1"># Extract hour from transaction time (0-23)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'is_weekend'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'day_of_week'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># 1=Weekend, 0=Weekday</span>
+
+<span class="c1"># Drop original txn_date column</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">])</span>
+
+<span class="c1"># Display updated dataset</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>description</th>
+<th>amount</th>
+<th>is_interested_investment</th>
+<th>is_interested_build_credit</th>
+<th>is_interested_increase_income</th>
+<th>is_interested_pay_off_debt</th>
+<th>is_interested_manage_spending</th>
+<th>is_interested_grow_savings</th>
+<th>category_ATM</th>
+<th>category_Arts and Entertainment</th>
+<th>category_Bank Fee</th>
+<th>category_Bank Fees</th>
+<th>category_Check Deposit</th>
+<th>category_Clothing and Accessories</th>
+<th>category_Convenience Stores</th>
+<th>category_Department Stores</th>
+<th>category_Digital Entertainment</th>
+<th>category_Food and Beverage Services</th>
+<th>category_Gas Stations</th>
+<th>category_Gyms and Fitness Centers</th>
+<th>category_Healthcare</th>
+<th>category_Insurance</th>
+<th>category_Interest</th>
+<th>category_Internal Account Transfer</th>
+<th>category_Loans</th>
+<th>category_Payment</th>
+<th>category_Payroll</th>
+<th>category_Restaurants</th>
+<th>category_Service</th>
+<th>category_Shops</th>
+<th>category_Supermarkets and Groceries</th>
+<th>category_Tax Refund</th>
+<th>category_Telecommunication Services</th>
+<th>category_Third Party</th>
+<th>category_Transfer</th>
+<th>category_Transfer Credit</th>
+<th>category_Transfer Debit</th>
+<th>category_Transfer Deposit</th>
+<th>category_Travel</th>
+<th>category_Uncategorized</th>
+<th>category_Utilities</th>
+<th>day_of_week</th>
+<th>day_of_month</th>
+<th>hour</th>
+<th>is_weekend</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>Earnin           PAYMENT                 Donatas Danyal</td>
+<td>20.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>4</td>
+<td>29</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>1</th>
+<td>ONLINE TRANSFER FROM NDonatas DanyalDA O CARSON BUSINESS CHECKING 1216 1216</td>
+<td>25.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>14</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MONEY TRANSFER                          AUTHORIZED ON   09/25 FROM Earnin CDAEJ_B                     CA  S583269001208168   111</td>
+<td>20.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>25</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>3</th>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>16.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>4</th>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>4.0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Normalizing-transaction-amount-Using-Z-Score">Normalizing transaction <code>amount</code> Using Z-Score<a class="anchor-link" href="#Normalizing-transaction-amount-Using-Z-Score">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [84]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="c1"># Initialize Standard Scaler</span>
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
+
+<span class="c1"># Select numerical features to scale</span>
+<span class="n">numerical_features</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'amount'</span><span class="p">,</span> <span class="s1">'day_of_week'</span><span class="p">,</span> <span class="s1">'day_of_month'</span><span class="p">,</span> <span class="s1">'hour'</span><span class="p">]</span>
+
+<span class="c1"># Fit scaler on the training data &amp; transform it</span>
+<span class="n">df</span><span class="p">[</span><span class="n">numerical_features</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">numerical_features</span><span class="p">])</span>
+
+<span class="c1"># Save the trained scaler to a file for use in training &amp; inference</span>
+<span class="n">SCALER_PATH</span> <span class="o">=</span> <span class="s2">"../models/scaler/scaler.pkl"</span>
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">SCALER_PATH</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">SCALER_PATH</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+<span class="c1"># Check the scaled values</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">numerical_features</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>             amount   day_of_week  day_of_month          hour
+count  2.585220e+05  2.585220e+05  2.585220e+05  2.585220e+05
+mean   1.231319e-17  2.176797e-17  1.594119e-16 -2.094342e-17
+std    1.000002e+00  1.000002e+00  1.000002e+00  1.000002e+00
+min   -1.129187e+02 -1.240304e+00 -1.703148e+00 -3.006417e-01
+25%   -1.053363e-01 -1.240304e+00 -9.137470e-01 -3.006417e-01
+50%   -5.457531e-02 -1.206484e-01 -1.157457e-02 -3.006417e-01
+75%   -6.771250e-03  9.990077e-01  8.905979e-01 -3.006417e-01
+max    1.157558e+02  2.118664e+00  1.679999e+00  4.479723e+00
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Check-for-class-imbalance">Check for class imbalance<a class="anchor-link" href="#Check-for-class-imbalance">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [85]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Count the number of instances for each category</span>
+<span class="n">category_counts</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">like</span><span class="o">=</span><span class="s2">"category_"</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Compute percentage distribution</span>
+<span class="n">total_samples</span> <span class="o">=</span> <span class="n">category_counts</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="n">category_percentages</span> <span class="o">=</span> <span class="p">(</span><span class="n">category_counts</span> <span class="o">/</span> <span class="n">total_samples</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+
+<span class="c1"># Print class distribution in percentage</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Category Percentage Distribution:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">category_percentages</span><span class="p">)</span>
+
+<span class="c1"># Get all one-hot encoded category columns</span>
+<span class="n">category_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"category_"</span><span class="p">)]</span>
+
+<span class="c1"># Count the number of unique transaction categories</span>
+<span class="n">num_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">category_cols</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total number of unique transaction categories: </span><span class="si">{</span><span class="n">num_classes</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+Category Percentage Distribution:
+category_Uncategorized                 11.369245
+category_Third Party                   11.106985
+category_Restaurants                   10.199132
+category_Transfer Credit                8.340103
+category_Loans                          7.583494
+category_Convenience Stores             7.206350
+category_Supermarkets and Groceries     6.479139
+category_Transfer Debit                 5.846311
+category_Gas Stations                   4.997254
+category_Internal Account Transfer      4.635195
+category_Payroll                        3.133196
+category_Shops                          2.869388
+category_Bank Fees                      2.487989
+category_Transfer                       2.427260
+category_ATM                            2.194011
+category_Transfer Deposit               1.924788
+category_Digital Entertainment          1.750335
+category_Utilities                      1.592901
+category_Clothing and Accessories       1.233938
+category_Department Stores              0.774402
+category_Insurance                      0.678472
+category_Service                        0.352001
+category_Arts and Entertainment         0.153565
+category_Travel                         0.141961
+category_Food and Beverage Services     0.132677
+category_Interest                       0.108308
+category_Check Deposit                  0.081618
+category_Healthcare                     0.080071
+category_Telecommunication Services     0.061503
+category_Gyms and Fitness Centers       0.026690
+category_Payment                        0.015859
+category_Bank Fee                       0.013925
+category_Tax Refund                     0.001934
+dtype: float64
+Total number of unique transaction categories: 33
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Based on the category percentage distribution, the dataset is imbalanced as some categories have significantly more instances than others.</p>
+<p>To deal with class imbalance, use class weighting to penalize mistakes in minority classes more than in majority classes. This ensures that the model does not become biased toward the dominant class. Without class weights, each class contributes equally to the loss. This can be a problem if the dataset is highly imbalanced.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [86]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.utils.class_weight</span> <span class="kn">import</span> <span class="n">compute_class_weight</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">category_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"category_"</span><span class="p">)]</span>
+
+<span class="c1"># Compute class weights (inverse of class frequency)</span>
+<span class="n">class_weights</span> <span class="o">=</span> <span class="n">compute_class_weight</span><span class="p">(</span>
+    <span class="n">class_weight</span><span class="o">=</span><span class="s2">"balanced"</span><span class="p">,</span>  <span class="c1"># Assigns higher weights to minority classes</span>
+    <span class="n">classes</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">category_cols</span><span class="p">)),</span>  <span class="c1"># Class indices</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="n">category_cols</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Convert one-hot to class index</span>
+<span class="p">)</span>
+
+<span class="c1"># Convert to dictionary format</span>
+<span class="n">class_weights_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">weight</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">class_weights</span><span class="p">)}</span>
+
+<span class="c1"># Save the class weights to a file for use in training</span>
+<span class="n">CLASS_WEIGHTS_PATH</span> <span class="o">=</span> <span class="s2">"../models/class_weights/class_weights.pkl"</span>
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">CLASS_WEIGHTS_PATH</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">CLASS_WEIGHTS_PATH</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">class_weights_dict</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Text-Preprocessing-(Transaction-Description)">Text Preprocessing (Transaction Description)<a class="anchor-link" href="#Text-Preprocessing-(Transaction-Description)">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Text-Cleaning-&amp;-Normalization-&amp;-NER">Text Cleaning &amp; Normalization &amp; NER<a class="anchor-link" href="#Text-Cleaning-&amp;-Normalization-&amp;-NER">¶</a></h4><p>The following are the text cleaning rules that I can think of:</p>
+<ul>
+<li>Lowercasing: Convert all text to lowercase.</li>
+<li>Removing punctuation &amp; special characters: Strip unnecessary punctuation (except when part of a business name).</li>
+<li>Removing extra spaces: Ensure clean, space-separated tokens.</li>
+<li>Lemmatization: Convert words to their base form (e.g., "running" → "run").</li>
+<li>Removing stopwords: Remove common words like "the," "is," "on" that don't contribute meaning.</li>
+<li>Removing numbers (unless part of a business name): Numbers alone are removed, but business names with numbers are retained.</li>
+<li>Removing natural person names (PERSON from NER): Do not provide information.</li>
+<li>Keeping business names (ORG from NER): Business names are valuable in transaction classification and are preserved.</li>
+<li>Removing locations &amp; dates (GPE, DATE from NER): Location and date details are unnecessary and are removed.</li>
+<li>Removing identifiers or serial numbers: Example: "84DD466B7C25425" and "8445052993ca" are removed.</li>
+</ul>
+<p><em>This cell takes a while to run, it scans through all rows and do the cleaning. I commented it out since there's already a copy of <code>preprocessed_bank_transaction.csv</code> under <code>/dataset</code></em></p>
+<blockquote>
+<p>IMPORTANT: Make sure you have "en_core_web_lg" installed on your machine first. If not, run <code>python -m spacy download en_core_web_lg </code></p>
+</blockquote>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [87]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">spacy</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="c1"># Check if the SpaCy model is installed</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">spacy</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">is_package</span><span class="p">(</span><span class="s2">"en_core_web_lg"</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Downloading 'en_core_web_lg' model..."</span><span class="p">)</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">"-m"</span><span class="p">,</span> <span class="s2">"spacy"</span><span class="p">,</span> <span class="s2">"download"</span><span class="p">,</span> <span class="s2">"en_core_web_lg"</span><span class="p">])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"SpaCy model 'en_core_web_lg' is already installed."</span><span class="p">)</span>
+
+<span class="c1"># Load SpaCy model</span>
+<span class="n">nlp</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"en_core_web_lg"</span><span class="p">)</span>
+
+<span class="c1"># Enable tqdm with Pandas for progress bars</span>
+<span class="n">tqdm</span><span class="o">.</span><span class="n">pandas</span><span class="p">()</span>
+
+<span class="c1"># Dictionary to expand common abbreviations in the text</span>
+<span class="n">ABBR_DICT</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'ckg'</span><span class="p">:</span> <span class="s1">'checking'</span><span class="p">,</span> <span class="s1">'chk'</span><span class="p">:</span> <span class="s1">'check'</span><span class="p">,</span> <span class="s1">'dep'</span><span class="p">:</span> <span class="s1">'deposit'</span><span class="p">,</span> <span class="s1">'trns'</span><span class="p">:</span> <span class="s1">'transfer'</span><span class="p">,</span>
+    <span class="s1">'adv'</span><span class="p">:</span> <span class="s1">'advance'</span><span class="p">,</span> <span class="s1">'w/d'</span><span class="p">:</span> <span class="s1">'withdrawal'</span><span class="p">,</span> <span class="s1">'wd'</span><span class="p">:</span> <span class="s1">'withdrawal'</span><span class="p">,</span> <span class="s1">'xfer'</span><span class="p">:</span> <span class="s1">'transfer'</span><span class="p">,</span>
+    <span class="s1">'pmt'</span><span class="p">:</span> <span class="s1">'payment'</span><span class="p">,</span> <span class="s1">'txn'</span><span class="p">:</span> <span class="s1">'transaction'</span><span class="p">,</span> <span class="s1">'int'</span><span class="p">:</span> <span class="s1">'interest'</span><span class="p">,</span> <span class="s1">'intl'</span><span class="p">:</span> <span class="s1">'international'</span><span class="p">,</span>
+    <span class="s1">'intr'</span><span class="p">:</span> <span class="s1">'interest'</span><span class="p">,</span> <span class="s1">'chg'</span><span class="p">:</span> <span class="s1">'charge'</span><span class="p">,</span> <span class="s1">'pos'</span><span class="p">:</span> <span class="s1">'point of sale'</span><span class="p">,</span>
+    <span class="s1">'purch'</span><span class="p">:</span> <span class="s1">'purchase'</span><span class="p">,</span> <span class="s1">'atm'</span><span class="p">:</span> <span class="s1">'cash machine'</span><span class="p">,</span> <span class="s1">'atw'</span><span class="p">:</span> <span class="s1">'cash machine'</span><span class="p">,</span>
+    <span class="s1">'cd'</span><span class="p">:</span> <span class="s1">'certificate of deposit'</span><span class="p">,</span> <span class="s1">'cc'</span><span class="p">:</span> <span class="s1">'credit card'</span><span class="p">,</span> <span class="s1">'dc'</span><span class="p">:</span> <span class="s1">'debit card'</span><span class="p">,</span>
+    <span class="s1">'bal'</span><span class="p">:</span> <span class="s1">'balance'</span><span class="p">,</span> <span class="s1">'adj'</span><span class="p">:</span> <span class="s1">'adjustment'</span><span class="p">,</span> <span class="s1">'adjmt'</span><span class="p">:</span> <span class="s1">'adjustment'</span><span class="p">,</span> <span class="s1">'apmt'</span><span class="p">:</span> <span class="s1">'automatic payment'</span><span class="p">,</span>
+    <span class="s1">'av'</span><span class="p">:</span> <span class="s1">'available'</span><span class="p">,</span> <span class="s1">'bk'</span><span class="p">:</span> <span class="s1">'bank'</span><span class="p">,</span> <span class="s1">'bkcard'</span><span class="p">:</span> <span class="s1">'bank card'</span><span class="p">,</span>
+    <span class="s1">'bkchg'</span><span class="p">:</span> <span class="s1">'bank charge'</span><span class="p">,</span> <span class="s1">'bkfee'</span><span class="p">:</span> <span class="s1">'bank fee'</span><span class="p">,</span> <span class="s1">'bkln'</span><span class="p">:</span> <span class="s1">'bank loan'</span><span class="p">,</span>
+    <span class="s1">'bkstmt'</span><span class="p">:</span> <span class="s1">'bank statement'</span><span class="p">,</span> <span class="s1">'bktrns'</span><span class="p">:</span> <span class="s1">'bank transfer'</span><span class="p">,</span> <span class="s1">'bkwd'</span><span class="p">:</span> <span class="s1">'bank withdrawal'</span><span class="p">,</span>
+    <span class="s1">'blnc'</span><span class="p">:</span> <span class="s1">'balance'</span><span class="p">,</span> <span class="s1">'bnk'</span><span class="p">:</span> <span class="s1">'bank'</span><span class="p">,</span> <span class="s1">'bnkchg'</span><span class="p">:</span> <span class="s1">'bank charge'</span><span class="p">,</span> <span class="s1">'n'</span><span class="p">:</span> <span class="s2">"and"</span><span class="p">,</span> <span class="s1">'tx'</span><span class="p">:</span> <span class="s1">'transaction'</span><span class="p">,</span> 
+    <span class="s1">'cb'</span><span class="p">:</span> <span class="s1">'chase bank'</span><span class="p">,</span> <span class="s1">'trsf'</span><span class="p">:</span> <span class="s1">'transfer'</span><span class="p">,</span> <span class="s1">'ref'</span><span class="p">:</span> <span class="s1">'reference'</span><span class="p">,</span> <span class="s1">'pymt'</span><span class="p">:</span> <span class="s1">'payment'</span><span class="p">,</span> <span class="s1">'pymnt'</span><span class="p">:</span> <span class="s1">'payment'</span><span class="p">,</span> 
+    <span class="s1">'pmnt'</span><span class="p">:</span> <span class="s1">'payment'</span><span class="p">,</span> <span class="s1">'pw'</span><span class="p">:</span> <span class="s1">''</span><span class="p">,</span> <span class="s1">'ml'</span><span class="p">:</span> <span class="s1">''</span><span class="p">,</span> <span class="s1">'rcvd'</span><span class="p">:</span> <span class="s1">'received'</span><span class="p">,</span> <span class="s1">'dbt'</span><span class="p">:</span> <span class="s1">'debit'</span><span class="p">,</span> <span class="s1">'crd'</span><span class="p">:</span> <span class="s1">'card'</span><span class="p">,</span>
+    <span class="s1">'mar'</span><span class="p">:</span> <span class="s1">'mart'</span><span class="p">,</span> <span class="s1">'stor'</span><span class="p">:</span> <span class="s1">'store'</span><span class="p">,</span> <span class="s1">'sup'</span><span class="p">:</span> <span class="s1">'supermarket'</span>
+<span class="p">}</span>
+
+<span class="c1"># Set of terms to remove from the text</span>
+<span class="n">REMOVED_TERMS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'ak'</span><span class="p">,</span> <span class="s1">'al'</span><span class="p">,</span> <span class="s1">'ar'</span><span class="p">,</span> <span class="s1">'az'</span><span class="p">,</span> <span class="s1">'ca'</span><span class="p">,</span> <span class="s1">'co'</span><span class="p">,</span> <span class="s1">'ct'</span><span class="p">,</span> <span class="s1">'dc'</span><span class="p">,</span> <span class="s1">'de'</span><span class="p">,</span> <span class="s1">'fl'</span><span class="p">,</span> <span class="s1">'ga'</span><span class="p">,</span> <span class="s1">'hi'</span><span class="p">,</span> <span class="s1">'ia'</span><span class="p">,</span> 
+    <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'il'</span><span class="p">,</span> <span class="s1">'in'</span><span class="p">,</span> <span class="s1">'ks'</span><span class="p">,</span> <span class="s1">'ky'</span><span class="p">,</span> <span class="s1">'la'</span><span class="p">,</span> <span class="s1">'ma'</span><span class="p">,</span> <span class="s1">'md'</span><span class="p">,</span> <span class="s1">'me'</span><span class="p">,</span> <span class="s1">'mi'</span><span class="p">,</span> <span class="s1">'mn'</span><span class="p">,</span> <span class="s1">'mo'</span><span class="p">,</span> <span class="s1">'ms'</span><span class="p">,</span> 
+    <span class="s1">'mt'</span><span class="p">,</span> <span class="s1">'nc'</span><span class="p">,</span> <span class="s1">'nd'</span><span class="p">,</span> <span class="s1">'ne'</span><span class="p">,</span> <span class="s1">'nh'</span><span class="p">,</span> <span class="s1">'nj'</span><span class="p">,</span> <span class="s1">'nm'</span><span class="p">,</span> <span class="s1">'nv'</span><span class="p">,</span> <span class="s1">'ny'</span><span class="p">,</span> <span class="s1">'oh'</span><span class="p">,</span> <span class="s1">'ok'</span><span class="p">,</span> <span class="s1">'or'</span><span class="p">,</span> <span class="s1">'pa'</span><span class="p">,</span> 
+    <span class="s1">'ri'</span><span class="p">,</span> <span class="s1">'sc'</span><span class="p">,</span> <span class="s1">'sd'</span><span class="p">,</span> <span class="s1">'tn'</span><span class="p">,</span> <span class="s1">'tx'</span><span class="p">,</span> <span class="s1">'ut'</span><span class="p">,</span> <span class="s1">'va'</span><span class="p">,</span> <span class="s1">'vt'</span><span class="p">,</span> <span class="s1">'wa'</span><span class="p">,</span> <span class="s1">'wi'</span><span class="p">,</span> <span class="s1">'wv'</span><span class="p">,</span> <span class="s1">'wy'</span><span class="p">,</span> <span class="s1">'rd'</span><span class="p">,</span>
+    <span class="s1">'date'</span><span class="p">,</span> <span class="s1">'card'</span>
+<span class="p">}</span>
+
+<span class="c1"># Set of terms to keep in the text (e.g., specific company names)</span>
+<span class="n">KEPT_TERMS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'7-eleven'</span><span class="p">,</span> <span class="s1">'7eleven'</span><span class="p">,</span> <span class="s1">'7 eleven'</span><span class="p">,</span> <span class="s1">'walmart'</span><span class="p">,</span> <span class="s1">'circle k'</span><span class="p">,</span> <span class="s1">'target'</span><span class="p">,</span> <span class="s1">'costco'</span><span class="p">,</span> <span class="s1">'sams club'</span>
+<span class="p">}</span>
+
+<span class="c1"># Regex patterns for identifying dates, digits, colons/slashes, special characters, and repeated spaces</span>
+<span class="n">DATE_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\b(?:\d{1,2}[-/]\d{1,2}(?:[-/]\d{2,4})?|\d</span><span class="si">{4}</span><span class="s1">[-/]\d{1,2}[-/]\d{1,2})\b'</span><span class="p">)</span>
+<span class="n">DIGITS_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\d+'</span><span class="p">)</span>
+<span class="n">COLON_SLASH_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'[:/]'</span><span class="p">)</span>
+<span class="n">REPEATED_SPACES</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\s+'</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">is_interleaved_alphanumeric</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Check if text has interleaved letters and numbers"""</span>
+    <span class="n">is_digit_prev</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span>
+    <span class="n">transitions</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">is_digit_curr</span> <span class="o">=</span> <span class="n">char</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_digit_curr</span> <span class="o">!=</span> <span class="n">is_digit_prev</span><span class="p">:</span>
+            <span class="n">transitions</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">is_digit_prev</span> <span class="o">=</span> <span class="n">is_digit_curr</span>
+    <span class="k">return</span> <span class="n">transitions</span> <span class="o">&gt;</span> <span class="mi">2</span>
+
+<span class="k">def</span> <span class="nf">extract_potential_entity</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Extract letters from alphanumeric text if clearly separated"""</span>
+    <span class="k">if</span> <span class="n">is_interleaved_alphanumeric</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">DIGITS_PATTERN</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">''</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">clean_normalize_text</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Clean and normalize text by expanding abbreviations, removing unwanted terms, and processing with SpaCy."""</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    
+    <span class="c1"># Check for kept terms before any processing</span>
+    <span class="k">for</span> <span class="n">kept_term</span> <span class="ow">in</span> <span class="n">KEPT_TERMS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">kept_term</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">kept_term</span>
+        
+    <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">expanded_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">ABBR_DICT</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">word</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">]</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="s1">' '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expanded_words</span><span class="p">)</span>
+
+    <span class="c1"># Remove special characters</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">'[^a-zA-Z0-9\s-]'</span><span class="p">,</span> <span class="s1">' '</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    
+    <span class="c1"># Process text with SpaCy to tokenize and analyze entities</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="n">nlp</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    
+    <span class="n">cleaned_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">doc</span><span class="p">:</span>
+        <span class="n">word</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        
+        <span class="c1"># Remove entities: person names, locations, dates</span>
+        <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">ent_type_</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'PERSON'</span><span class="p">,</span> <span class="s1">'GPE'</span><span class="p">,</span> <span class="s1">'DATE'</span><span class="p">]:</span>
+            <span class="k">continue</span>
+        
+        <span class="c1"># Remove date patterns</span>
+        <span class="k">if</span> <span class="n">DATE_PATTERN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Remove words containing ":" or "/"</span>
+        <span class="k">if</span> <span class="n">COLON_SLASH_PATTERN</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
+            <span class="k">continue</span>
+        
+        <span class="c1"># Skip if word is a state abbreviation</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">REMOVED_TERMS</span><span class="p">:</span>
+            <span class="k">continue</span>
+        
+        <span class="c1"># Keep organization names</span>
+        <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">ent_type_</span> <span class="o">==</span> <span class="s1">'ORG'</span><span class="p">:</span>
+            <span class="n">cleaned_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">continue</span>
+        
+        <span class="c1"># Handle alphanumeric words</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">word</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">isalpha</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">word</span><span class="p">):</span>
+            <span class="n">entity_name</span> <span class="o">=</span> <span class="n">extract_potential_entity</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entity_name</span><span class="p">:</span>
+                <span class="n">cleaned_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entity_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="k">continue</span>
+            
+        <span class="c1"># Skip punctuation, stopwords, numbers, and short words</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">is_punct</span> <span class="ow">and</span> 
+            <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">is_stop</span> <span class="ow">and</span> 
+            <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">like_num</span> <span class="ow">and</span> 
+            <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">cleaned_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">lemma_</span><span class="p">)</span>
+            
+    <span class="c1"># Join tokens and clean up spaces</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="s1">' '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cleaned_tokens</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">REPEATED_SPACES</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">'display.max_colwidth'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">'display.max_columns'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">'display.width'</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+
+<span class="n">df</span><span class="p">[</span><span class="s1">'processed_description'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'description'</span><span class="p">]</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span><span class="n">clean_normalize_text</span><span class="p">)</span>
+
+<span class="c1"># Display the first few rows</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s1">'description'</span><span class="p">,</span> <span class="s1">'processed_description'</span><span class="p">]])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>SpaCy model 'en_core_web_lg' is already installed.
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>100%|██████████| 258522/258522 [23:45&lt;00:00, 181.34it/s]
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>description</th>
+<th>processed_description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>Earnin           PAYMENT                 Donatas Danyal</td>
+<td>earnin payment donatas danyal</td>
+</tr>
+<tr>
+<th>1</th>
+<td>ONLINE TRANSFER FROM NDonatas DanyalDA O CARSON BUSINESS CHECKING 1216 1216</td>
+<td>online transfer ndonatas danyalda o carson business check</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MONEY TRANSFER                          AUTHORIZED ON   09/25 FROM Earnin CDAEJ_B                     CA  S583269001208168   111</td>
+<td>money transfer authorize earnin cdaej s</td>
+</tr>
+<tr>
+<th>3</th>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>online transfer everyday check</td>
+</tr>
+<tr>
+<th>4</th>
+<td>ONLINE TRANSFER FROM CARSON N EVERYDAY CHECKING 1216 1216</td>
+<td>online transfer everyday check</td>
+</tr>
+<tr>
+<th>...</th>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr>
+<th>258774</th>
+<td>CHECK111</td>
+<td>check</td>
+</tr>
+<tr>
+<th>258775</th>
+<td>CHECK111</td>
+<td>check</td>
+</tr>
+<tr>
+<th>258776</th>
+<td>7-ELEVEN 08/21 #3168 PURCHASE 7-ELEVEN BALTIMORE MD</td>
+<td>7-eleven</td>
+</tr>
+<tr>
+<th>258777</th>
+<td>7-ELEVEN 07/10 3168 PURCHASE 7-ELEVEN BALTIMORE MD</td>
+<td>7-eleven</td>
+</tr>
+<tr>
+<th>258778</th>
+<td>SHOPPERS FOOD/ 09/17 #3168 PURCHASE SHOPPERS FOOD/PHA BALTIMORE MD</td>
+<td>shopper food purchase shopper food pha baltimore</td>
+</tr>
+</tbody>
+</table>
+<p>258522 rows × 2 columns</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>However, due to how Spacy handles tokenisation and its limited NLP capabilities, the outcome of text cleaning doesn't look very promising. Errors can be found. E.g. it got confused between entity names and person's names, and misunderstood the meanings of certain words.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Text-Feature-Extraction-&amp;-Embeddings">Text Feature Extraction &amp; Embeddings<a class="anchor-link" href="#Text-Feature-Extraction-&amp;-Embeddings">¶</a></h4><p>Train a custom FastText Model fine-tunes embeddings on the actual transaction descriptions.</p>
+<ul>
+<li>Learns financial transaction-specific vocabulary, relationship between unique vendor names, abbreviations and industry-specific terms.</li>
+<li>Handles noisy transaction text better</li>
+</ul>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [88]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># pip install gensim</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="kn">import</span> <span class="nn">gensim</span>
+<span class="kn">from</span> <span class="nn">gensim.models</span> <span class="kn">import</span> <span class="n">FastText</span>
+<span class="n">gensim</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="c1"># Tokenize descriptions</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'tokenized_description'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'processed_description'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notna</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">else</span> <span class="p">[])</span>
+
+<span class="c1"># Train FastText model on your transaction descriptions</span>
+<span class="n">fasttext_model</span> <span class="o">=</span> <span class="n">FastText</span><span class="p">(</span>
+    <span class="n">sentences</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s1">'tokenized_description'</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+    <span class="n">vector_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> 
+    <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">min_count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> 
+    <span class="n">workers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">sg</span><span class="o">=</span><span class="mi">1</span> 
+<span class="p">)</span>
+
+<span class="c1"># Save model for future use</span>
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">"../models/fasttext"</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">fasttext_model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"../models/fasttext/fasttext_model.bin"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Convert each transaction description into a numerical vector using the custom FastText model</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [89]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">get_embedding</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="c1"># Ensure text is a string and handle missing values</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Return zero vector for empty/missing descriptions</span>
+
+    <span class="n">words</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">word_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">fasttext_model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">fasttext_model</span><span class="o">.</span><span class="n">wv</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word_vectors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Return zero vector if no words exist in FastText vocabulary</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">word_vectors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Take mean to get sentence-level embedding</span>
+
+<span class="n">df</span><span class="p">[</span><span class="s1">'fasttext_embedding'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'processed_description'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">get_embedding</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Convert embedding vector into separate feature columns:</p>
+<p>Split the 100-dimensional embedding into 100 separate feature columns</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [90]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Convert FastText embedding list into separate columns</span>
+<span class="n">embedding_size</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># Vector size from FastText</span>
+<span class="n">embedding_cols</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'fasttext_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embedding_size</span><span class="p">)]</span>
+
+<span class="c1"># Convert each vector into multiple columns</span>
+<span class="n">embedding_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'fasttext_embedding'</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">(),</span> <span class="n">columns</span><span class="o">=</span><span class="n">embedding_cols</span><span class="p">)</span>
+
+<span class="c1"># Merge back with the main DataFrame</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">embedding_df</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Drop the original embedding column since it's now expanded</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'fasttext_embedding'</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Final column rearrangement and cleaning</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [91]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Drop the original and processed description columns</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'description'</span><span class="p">,</span> <span class="s1">'processed_description'</span><span class="p">,</span> <span class="s1">'tokenized_description'</span><span class="p">])</span>
+
+<span class="c1"># Move the columns prefixed with category_ to the end</span>
+<span class="n">category_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"category_"</span><span class="p">)]</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">category_cols</span><span class="p">]</span> <span class="o">+</span> <span class="n">category_cols</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Saving the final preprocessed dataset</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [92]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># df.to_csv("../dataset/preprocessed_bank_transaction.csv", index=False)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Model-Training">Model Training<a class="anchor-link" href="#Model-Training">¶</a></h2><p>Having preprocessed the dataset, this section builds and trains an ANN, hopefully be able to classify transaction category and achieve decent result.</p>
 </div>
 </div>
 </div>
@@ -7548,7 +9653,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [93]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -7560,8 +9665,6 @@ a.anchor-link {
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">LabelEncoder</span>
 <span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">TensorDataset</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7572,7 +9675,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [94]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Set random seeds for reproducibility</span>
@@ -7590,9 +9693,9 @@ a.anchor-link {
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[3]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[94]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>&lt;torch._C.Generator at 0x1ccba915f50&gt;</pre>
+<pre>&lt;torch._C.Generator at 0x2956fd3dcf0&gt;</pre>
 </div>
 </div>
 </div>
@@ -7613,7 +9716,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [95]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Load the preprocessed data</span>
@@ -7646,7 +9749,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [96]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Extract all category columns</span>
@@ -7686,7 +9789,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [97]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Train-test split (70/30)</span>
@@ -7753,7 +9856,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [98]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Define the ANN model</span>
@@ -7809,7 +9912,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [99]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
@@ -7850,7 +9953,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [100]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch.optim</span> <span class="k">as</span> <span class="nn">optim</span>
@@ -7900,7 +10003,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [101]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">input_size</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Total number of input features</span>
@@ -7966,7 +10069,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [102]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -8041,7 +10144,6 @@ Shape of y_test: torch.Size([77557, 33])
 
 <span class="k">def</span> <span class="nf">save_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Save trained model and create directories."""</span>
-    <span class="c1"># Create directories</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">"../models/ann"</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">"../results/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -8073,7 +10175,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [103]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
@@ -8190,7 +10292,7 @@ Shape of y_test: torch.Size([77557, 33])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [104]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">category_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"category_"</span><span class="p">)]</span>
@@ -8405,6 +10507,1340 @@ Telecommunication Services       0.54      0.62      0.58        50
               weighted avg       0.82      0.81      0.80     77536
 
 Classification report saved at: ../results/ANN_10e_1e-3lr_bce_classifier/classification_report.txt
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Model-Inference">Model Inference<a class="anchor-link" href="#Model-Inference">¶</a></h2><p>This section serves as an example of the pipeline predicting the category of <em>new unseen</em> transaction (<code>inference.csv</code>). This dataset is sourced from the original <code>bank_transaction.csv</code> dataset, i.e. 257 instances with missing class labels. These instances were dropped during preprocessing hence <strong>not seen</strong> during training.</p>
+<p>These instances have no ground truth, let's see how the trained model is going to predict their categories :)</p>
+<p>Pipeline includes:</p>
+<ol>
+<li>Data preprocessing (numerical + text)</li>
+<li>Loading trained model weights</li>
+<li>Model Inference</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Load-and-Preprocess-the-New-Inference-Dataset">Load and Preprocess the New Inference Dataset<a class="anchor-link" href="#Load-and-Preprocess-the-New-Inference-Dataset">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [105]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">".."</span><span class="p">)))</span>
+
+<span class="c1"># Import the text cleaning function from the util folder</span>
+<span class="kn">from</span> <span class="nn">util.text_cleaning</span> <span class="kn">import</span> <span class="n">clean_normalize_text</span>
+
+<span class="c1"># Load the raw training dataset</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../dataset/preprocessed_bank_transaction.csv"</span><span class="p">)</span>
+
+<span class="c1"># Load the new dataset for inference</span>
+<span class="n">inference_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../dataset/inference.csv"</span><span class="p">)</span>
+
+<span class="c1"># Load the FastText model</span>
+<span class="kn">from</span> <span class="nn">gensim.models</span> <span class="kn">import</span> <span class="n">FastText</span>
+<span class="n">fasttext_model</span> <span class="o">=</span> <span class="n">FastText</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"../models/fasttext/fasttext_model.bin"</span><span class="p">)</span>
+
+<span class="c1"># Load the trained scaler</span>
+<span class="n">SCALER_PATH</span> <span class="o">=</span> <span class="s2">"../models/scaler/scaler.pkl"</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">SCALER_PATH</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">scaler</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Defining-Data-Preprocessing-Function">Defining Data Preprocessing Function<a class="anchor-link" href="#Defining-Data-Preprocessing-Function">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [106]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">preprocess_new_data</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">fasttext_model</span><span class="p">,</span> <span class="n">scaler</span><span class="p">,</span> <span class="n">structured_features</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Preprocess the new dataset without requiring a category column."""</span>
+
+    <span class="c1"># Drop unnecessary columns (if exist)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'client_id'</span><span class="p">,</span> <span class="s1">'bank_id'</span><span class="p">,</span> <span class="s1">'account_id'</span><span class="p">,</span> <span class="s1">'txn_id'</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">)</span>
+
+    <span class="c1"># Convert txn_date to datetime format (if applicable)</span>
+    <span class="k">if</span> <span class="s1">'txn_date'</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">'coerce'</span><span class="p">)</span>
+
+        <span class="c1"># Extract time-based features</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'day_of_week'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span>  <span class="c1"># Monday=0, Sunday=6</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'day_of_month'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span>  <span class="c1"># 1-31</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'hour'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>  <span class="c1"># Extract hour from transaction time (0-23)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'is_weekend'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'day_of_week'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">5</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># 1=Weekend, 0=Weekday</span>
+
+        <span class="c1"># Drop original txn_date column</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'txn_date'</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">)</span>
+
+    <span class="c1"># Ensure transaction descriptions are cleaned first</span>
+    <span class="k">if</span> <span class="s1">'description'</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'processed_description'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'description'</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s1">''</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">clean_normalize_text</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">"Column 'description' is missing in the dataset!"</span><span class="p">)</span>
+
+    <span class="c1"># Generate FastText embeddings from cleaned transaction descriptions</span>
+    <span class="k">def</span> <span class="nf">get_embedding</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>  <span class="c1"># Convert text to words</span>
+        <span class="n">word_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">fasttext_model</span><span class="o">.</span><span class="n">wv</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">fasttext_model</span><span class="o">.</span><span class="n">wv</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word_vectors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>  <span class="c1"># Ensure float32 dtype</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">word_vectors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>  <span class="c1"># Ensure float32 dtype</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">'fasttext_embedding'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'processed_description'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">get_embedding</span><span class="p">)</span>
+    <span class="n">fasttext_embeddings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'fasttext_embedding'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>  <span class="c1"># Ensure float32</span>
+
+    <span class="c1"># Drop raw text columns</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'description'</span><span class="p">,</span> <span class="s1">'processed_description'</span><span class="p">,</span> <span class="s1">'fasttext_embedding'</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">)</span>
+
+    <span class="c1"># Apply the SAME scaler to inference data</span>
+    <span class="n">numerical_features</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'amount'</span><span class="p">,</span> <span class="s1">'day_of_week'</span><span class="p">,</span> <span class="s1">'day_of_month'</span><span class="p">,</span> <span class="s1">'hour'</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">numerical_features</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">numerical_features</span><span class="p">])</span>
+
+    <span class="c1"># Ensure correct data type</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">structured_features</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">structured_features</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="c1"># Combine structured features and FastText embeddings into final feature matrix</span>
+    <span class="n">X_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="n">structured_features</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">fasttext_embeddings</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">X_new</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [107]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Extract structured numerical features (same as training)</span>
+<span class="n">structured_features</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'amount'</span><span class="p">,</span> <span class="s1">'is_interested_investment'</span><span class="p">,</span> <span class="s1">'is_interested_build_credit'</span><span class="p">,</span> <span class="s1">'is_interested_increase_income'</span><span class="p">,</span> <span class="s1">'is_interested_pay_off_debt'</span><span class="p">,</span> <span class="s1">'is_interested_manage_spending'</span><span class="p">,</span> <span class="s1">'is_interested_grow_savings'</span><span class="p">,</span> <span class="s1">'day_of_week'</span><span class="p">,</span> <span class="s1">'day_of_month'</span><span class="p">,</span> <span class="s1">'hour'</span><span class="p">,</span> <span class="s1">'is_weekend'</span><span class="p">]</span>
+
+<span class="c1"># Extract category column names from training dataset (ensuring consistent one-hot encoding)</span>
+<span class="n">category_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"category_"</span><span class="p">)]</span>
+
+<span class="c1"># Preprocess new dataset</span>
+<span class="n">X_new</span> <span class="o">=</span> <span class="n">preprocess_new_data</span><span class="p">(</span><span class="n">inference_df</span><span class="p">,</span> <span class="n">fasttext_model</span><span class="p">,</span> <span class="n">scaler</span><span class="p">,</span> <span class="n">structured_features</span><span class="p">)</span>
+
+<span class="c1"># Convert to PyTorch tensor</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span><span class="p">)</span>
+<span class="n">X_new_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">X_new</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="c1"># Print shape</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"New dataset shape after preprocessing:"</span><span class="p">,</span> <span class="n">X_new_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>New dataset shape after preprocessing: torch.Size([257, 111])
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Initialise-and-Load-the-Trained-Model">Initialise and Load the Trained Model<a class="anchor-link" href="#Initialise-and-Load-the-Trained-Model">¶</a></h4><p>For this inference, I'll be using the model trained with:</p>
+<ul>
+<li>50 epochs</li>
+<li>0.001 learning rate</li>
+<li>BCELoss() as loss function</li>
+<li>82% average accuracy</li>
+</ul>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [108]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">model</span> <span class="kn">import</span> <span class="n">TransactionClassifier</span>
+
+<span class="c1"># Load the trained model </span>
+<span class="n">model_path</span> <span class="o">=</span> <span class="s2">"../models/ann/ANN_10e_1e-3lr_bce_classifier.pth"</span> 
+
+<span class="c1"># Initialize the model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">TransactionClassifier</span><span class="p">(</span><span class="n">X_new_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">category_columns</span><span class="p">))</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_path</span><span class="p">))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span> 
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[108]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>TransactionClassifier(
+  (fc1): Linear(in_features=111, out_features=256, bias=True)
+  (bn1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (relu1): ReLU()
+  (dropout1): Dropout(p=0.3, inplace=False)
+  (fc2): Linear(in_features=256, out_features=128, bias=True)
+  (bn2): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (relu2): ReLU()
+  (dropout2): Dropout(p=0.3, inplace=False)
+  (fc3): Linear(in_features=128, out_features=33, bias=True)
+  (sigmoid): Sigmoid()
+)</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Predicting-Transaction-Categories-(Inference)">Predicting Transaction Categories (Inference)<a class="anchor-link" href="#Predicting-Transaction-Categories-(Inference)">¶</a></h4><p>Since these instances have no ground truth, it's therefore not feasible to obtain its accuracy. I'll just print out the transaction description and the model prediction to roughly get an idea of how the model is performing!</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [109]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Perform inference</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">X_new_tensor</span><span class="p">)</span>  <span class="c1"># Get model predictions</span>
+    <span class="n">predicted_categories</span> <span class="o">=</span> <span class="p">(</span><span class="n">outputs</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>  <span class="c1"># Convert logits to binary (threshold = 0.5)</span>
+
+<span class="c1"># Convert one-hot predictions back to category labels</span>
+<span class="n">predicted_labels</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predicted_categories</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">():</span>
+    <span class="n">predicted_index</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>  <span class="c1"># Get index of the highest probability category</span>
+    <span class="n">predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">category_columns</span><span class="p">[</span><span class="n">predicted_index</span><span class="p">])</span>  <span class="c1"># Map index to category column</span>
+
+<span class="c1"># Print the results</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">===== Model Predictions ====="</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">predicted</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">inference_df</span><span class="p">[</span><span class="s1">'description'</span><span class="p">],</span> <span class="n">predicted_labels</span><span class="p">)):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Transaction </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">:"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Description: </span><span class="si">{</span><span class="n">original</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Predicted Category: </span><span class="si">{</span><span class="n">predicted</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"-"</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+===== Model Predictions =====
+Transaction 1:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 2:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 3:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 4:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 5:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 6:
+  Description: Transfer from CB
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 7:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 8:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 9:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 10:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 11:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 12:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 13:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 14:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 15:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 16:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 17:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 18:
+  Description: Transfer from CB
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 19:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 20:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 21:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 22:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 23:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 24:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 25:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 26:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 27:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 28:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 29:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 30:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 31:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 32:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 33:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 34:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 35:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 36:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 37:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 38:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 39:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 40:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 41:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 42:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 43:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 44:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 45:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 46:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 47:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 48:
+  Description: Transfer from CB
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 49:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 50:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 51:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 52:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 53:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 54:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 55:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 56:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 57:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 58:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 59:
+  Description: Transfer from CB
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 60:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 61:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 62:
+  Description: Transfer from CB
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 63:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 64:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 65:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 66:
+  Description: Transfer from CB
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 67:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 68:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 69:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 70:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 71:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 72:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 73:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 74:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 75:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 76:
+  Description: Arby's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 77:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 78:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 79:
+  Description: Progressive
+  Predicted Category: category_Insurance
+--------------------------------------------------
+Transaction 80:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 81:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 82:
+  Description: Wendy's
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 83:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 84:
+  Description: Wendy's
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 85:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 86:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 87:
+  Description: Wendy's
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 88:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 89:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 90:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 91:
+  Description: Transfer to CB
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 92:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 93:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 94:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 95:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 96:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 97:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 98:
+  Description: INTERBANK TRANSFER TO 000:1036 - igit01 Maryse Hemant NY
+  Predicted Category: category_Internal Account Transfer
+--------------------------------------------------
+Transaction 99:
+  Description: PYMT TO RUMPKE WEB RECUR - 003 RUMPKE WEB RECURRING CINCINNATI OH
+  Predicted Category: category_Uncategorized
+--------------------------------------------------
+Transaction 100:
+  Description: Dollar General
+  Predicted Category: category_Shops
+--------------------------------------------------
+Transaction 101:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 102:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 103:
+  Description: Store
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 104:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 105:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 106:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 107:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 108:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 109:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 110:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 111:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 112:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 113:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 114:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 115:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 116:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 117:
+  Description: KFC
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 118:
+  Description: Wendy's
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 119:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 120:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 121:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 122:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 123:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 124:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 125:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 126:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 127:
+  Description: Cash Withdrawal Fee
+  Predicted Category: category_Bank Fees
+--------------------------------------------------
+Transaction 128:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 129:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 130:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 131:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 132:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 133:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 134:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 135:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 136:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 137:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 138:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 139:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 140:
+  Description: ELECTRONIC IMAGE
+  Predicted Category: category_Uncategorized
+--------------------------------------------------
+Transaction 141:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 142:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 143:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 144:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 145:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 146:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 147:
+  Description: Walmart
+  Predicted Category: category_Supermarkets and Groceries
+--------------------------------------------------
+Transaction 148:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 149:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 150:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 151:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 152:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 153:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 154:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 155:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 156:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 157:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 158:
+  Description: Sunoco
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 159:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 160:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 161:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 162:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 163:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 164:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 165:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 166:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 167:
+  Description: Subway
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 168:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 169:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 170:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 171:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 172:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 173:
+  Description: Wendy's
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 174:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 175:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 176:
+  Description: Walmart
+  Predicted Category: category_Supermarkets and Groceries
+--------------------------------------------------
+Transaction 177:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 178:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 179:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 180:
+  Description: Sunoco
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 181:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 182:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 183:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 184:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 185:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 186:
+  Description: Wendy's
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 187:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 188:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 189:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 190:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 191:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 192:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 193:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 194:
+  Description: Subway
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 195:
+  Description: Transfer to CB
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 196:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 197:
+  Description: Dollar General
+  Predicted Category: category_Shops
+--------------------------------------------------
+Transaction 198:
+  Description: ENOVA LOC NETCRDIS 3168 062623
+  Predicted Category: category_Loans
+--------------------------------------------------
+Transaction 199:
+  Description: Transfer to CB
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 200:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 201:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 202:
+  Description: Transfer to CB
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 203:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 204:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 205:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 206:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 207:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 208:
+  Description: Dollar General
+  Predicted Category: category_Shops
+--------------------------------------------------
+Transaction 209:
+  Description: Walmart
+  Predicted Category: category_Supermarkets and Groceries
+--------------------------------------------------
+Transaction 210:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 211:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 212:
+  Description: ATM Withdrawal
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 213:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 214:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 215:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 216:
+  Description: Walmart
+  Predicted Category: category_Supermarkets and Groceries
+--------------------------------------------------
+Transaction 217:
+  Description: Transfer to CB
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 218:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 219:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 220:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 221:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 222:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 223:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 224:
+  Description: Transfer to CB
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 225:
+  Description: 5/3 JEANIE DEPOSIT 2306261 - 004463 5002 OLD TAYLR MILL Maryse Hemant KY ON 062623 FROM CARD#: 3168
+  Predicted Category: category_Transfer Deposit
+--------------------------------------------------
+Transaction 226:
+  Description: MERCHANT PAYMENT - 510001 UNITED DAIRY FA Maryse Hemant KY ON 062623 FROM CARD#: 3168
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 227:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 228:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 229:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 230:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 231:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 232:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 233:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 234:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 235:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 236:
+  Description: Dollar General
+  Predicted Category: category_Shops
+--------------------------------------------------
+Transaction 237:
+  Description: McDonald's
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 238:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 239:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 240:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 241:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 242:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 243:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 244:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 245:
+  Description: Maryse Hemant
+  Predicted Category: category_ATM
+--------------------------------------------------
+Transaction 246:
+  Description: Dollar General
+  Predicted Category: category_Shops
+--------------------------------------------------
+Transaction 247:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 248:
+  Description: Dunkin Donuts
+  Predicted Category: category_Restaurants
+--------------------------------------------------
+Transaction 249:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 250:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 251:
+  Description: Cash app*cash out      visa direct  caus
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 252:
+  Description: Cash App*Maryse Hemant
+  Predicted Category: category_Third Party
+--------------------------------------------------
+Transaction 253:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 254:
+  Description: Transfer to Chime Savings Account
+  Predicted Category: category_Transfer Debit
+--------------------------------------------------
+Transaction 255:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
+Transaction 256:
+  Description: Dandy Mini Mart
+  Predicted Category: category_Convenience Stores
+--------------------------------------------------
+Transaction 257:
+  Description: Transfer from Chime Savings Account
+  Predicted Category: category_Transfer Credit
+--------------------------------------------------
 </pre>
 </div>
 </div>
