@@ -1,4 +1,4 @@
-# **MLS Take-Home Assessment - Transaction Category Classification**
+# **Transaction Category Classification**
 ## **Author:** Chau Jia Yi
  **Date:** 11/02/2025
 
